@@ -20,8 +20,122 @@ const {
   <meta name="author" content="Shokhjahon Khamraev" />
   <title>{title}</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block" />
+
+  <style>
+    #preloader {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #000;
+      display: flex; align-items: center; justify-content: center;
+      font-family: ui-monospace, 'SF Mono', 'Menlo', 'Consolas', monospace;
+      transition: opacity .5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #preloader.done { opacity: 0; pointer-events: none; }
+    .pre-log { display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.7; max-width: 540px; width: 100%; padding: 0 24px; }
+    .pre-line { opacity: 0; transform: translateY(3px); transition: opacity .25s ease, transform .25s ease; }
+    .pre-line.show { opacity: 1; transform: translateY(0); }
+    .c-cyan { color: #00e5ff; }
+    .c-dim { color: #484f58; }
+    .c-gray { color: #8b949e; }
+    .c-green { color: #50fa7b; }
+    .c-text { color: #c9d1d9; }
+    #page-content { opacity: 0; transition: opacity .3s ease; }
+  </style>
+
+  <script is:inline>
+    var __preT0 = performance.now();
+  </script>
 </head>
 <body>
-  <slot />
+  <div id="preloader" aria-hidden="true">
+    <div class="pre-log">
+      <div class="pre-line show" id="pre-l1">
+        <span class="c-cyan">INFO</span><span class="c-dim">:</span>&nbsp;&nbsp;&nbsp;&nbsp;
+        <span class="c-gray">Waiting for application startup...</span>
+      </div>
+      <div class="pre-line" id="pre-l2">
+        <span class="c-cyan">INFO</span><span class="c-dim">:</span>&nbsp;&nbsp;&nbsp;&nbsp;
+        <span class="c-green">Application startup complete.</span>
+      </div>
+      <div class="pre-line" id="pre-l3">
+        <span class="c-cyan">INFO</span><span class="c-dim">:</span>&nbsp;&nbsp;&nbsp;&nbsp;
+        <span class="c-text">Uvicorn running on</span>
+        <span class="c-green"> {Astro.site || 'http://localhost:8000'}</span>
+        <span class="c-text"> (Press CTRL+C to quit)</span>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+  (function(){
+    var l1 = document.getElementById('pre-l1');
+    var l2 = document.getElementById('pre-l2');
+    var l3 = document.getElementById('pre-l3');
+    var p = document.getElementById('preloader');
+    var revealed = false;
+
+    function reveal() {
+      if (revealed) return;
+      revealed = true;
+      var pg = document.getElementById('page-content');
+      if (pg) pg.style.opacity = '1';
+      if (p) {
+        p.classList.add('done');
+        setTimeout(function(){ p.remove(); }, 600);
+      }
+    }
+
+    var t0 = performance.now();
+    var fontLoaded = false;
+    var decided = false;
+
+    function onFontReady() {
+      fontLoaded = true;
+      var loadTime = performance.now() - t0;
+
+      if (decided) return;
+      decided = true;
+
+      if (loadTime < 150) {
+        if (l1) l1.style.display = 'none';
+        if (l2) l2.style.display = 'none';
+        if (l3) l3.classList.add('show');
+        setTimeout(reveal, 500);
+      } else {
+      }
+    }
+
+    if (document.fonts && document.fonts.load) {
+      document.fonts.load('1em "Material Symbols Outlined"').then(onFontReady).catch(onFontReady);
+    }
+
+    setTimeout(function(){
+      if (decided) return;
+      decided = true;
+      setTimeout(function(){ if(l2) l2.classList.add('show'); }, 0);
+      setTimeout(function(){ if(l3) l3.classList.add('show'); }, 450);
+      var animDone = false;
+      setTimeout(function(){
+        animDone = true;
+        if (fontLoaded) reveal();
+      }, 900);
+      var check = setInterval(function(){
+        if (fontLoaded && animDone) { clearInterval(check); reveal(); }
+      }, 50);
+    }, 500);
+
+    setTimeout(reveal, 4000);
+  })();
+  </script>
+
+  <!-- Page content wrapper: hidden behind preloader -->
+  <div id="page-content">
+    <slot />
+  </div>
 </body>
 </html>
