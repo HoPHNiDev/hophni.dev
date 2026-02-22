@@ -1,0 +1,193 @@
+---
+---
+
+<!-- Full-screen crash overlay -->
+<div
+  id="crash-overlay"
+  class="fixed inset-0 z-[200] pointer-events-none flex flex-col items-center justify-end"
+  style="display: none;"
+>
+  <!-- Dark vignette background -->
+  <div class="absolute inset-0 bg-gradient-to-t from-bg-dark via-bg-dark/80 to-transparent" style="opacity: 0; transition: opacity 1s ease;" id="crash-bg"></div>
+
+  <!-- Stitch + message -->
+  <div id="crash-message" class="relative z-10 text-center mb-[25vh]" style="opacity: 0; transform: scale(0.8); transition: opacity 0.6s ease 0.3s, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;">
+    <img
+      src="/stitch-crash.png"
+      alt="Stitch"
+      class="w-36 h-36 md:w-48 md:h-48 object-contain mx-auto drop-shadow-2xl"
+      draggable="false"
+    />
+    <div class="mt-4 space-y-2">
+      <div class="font-mono text-lg md:text-xl text-primary font-bold tracking-wide">
+        SYSTEM CRASH
+      </div>
+      <div class="font-mono text-sm text-gray-400">
+        <span class="text-red-400">●</span> docker-compose down <span class="text-syntax-comment"># oops</span>
+      </div>
+      <div class="font-mono text-xs text-gray-500 mt-4 animate-pulse">
+        move mouse to reboot...
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+(function() {
+  var IDLE_MS = 1 * 1000;
+  var overlay = document.getElementById('crash-overlay');
+  var crashBg = document.getElementById('crash-bg');
+  var crashMsg = document.getElementById('crash-message');
+  if (!overlay || !crashBg || !crashMsg) return;
+
+  var leftAt = null;
+  var crashed = false;
+  var savedElements = [];
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+      leftAt = Date.now();
+    } else if (leftAt) {
+      var away = Date.now() - leftAt;
+      leftAt = null;
+      if (away >= IDLE_MS && !crashed) {
+        triggerCrash();
+      }
+    }
+  });
+
+  function triggerCrash() {
+    crashed = true;
+    savedElements = [];
+
+    // 1. Scroll to top instantly
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Prevent horizontal scroll during crash
+    document.body.style.overflowX = 'hidden';
+
+    // 2. Short delay to let scroll settle
+    setTimeout(function() {
+      // Grab entire top-level blocks so nothing stays behind
+      var selectors = [
+        'header',            // IDE tab bar
+        '#about',            // entire hero section
+        '#experience',       // entire experience section
+        '#projects',         // entire projects section
+        '#contact',          // entire contact section
+        'footer',            // status bar
+      ];
+
+      var elements = [];
+      selectors.forEach(function(sel) {
+        var els = document.querySelectorAll(sel);
+        els.forEach(function(el) { elements.push(el); });
+      });
+
+      if (elements.length === 0) { crashed = false; return; }
+
+      var viewH = window.innerHeight;
+      var viewCenter = viewH * 0.55; // pile center point
+
+      // 3. For each element, calculate how to "fall" it to the pile
+      elements.forEach(function(el, i) {
+        var rect = el.getBoundingClientRect();
+        var elCenter = rect.top + rect.height / 2;
+
+        // How far to move to reach the pile center
+        var deltaY = viewCenter - elCenter;
+
+        // Random tilt and horizontal shift for messy pile effect
+        var rotate = (Math.random() - 0.5) * 20;
+        var shiftX = (Math.random() - 0.5) * 40;
+        // Elements further from center get more extreme transforms
+        var scaleDown = 0.85 + Math.random() * 0.1;
+
+        savedElements.push({
+          el: el,
+          origTransform: el.style.transform || '',
+          origTransition: el.style.transition || '',
+          origZIndex: el.style.zIndex || '',
+          origPosition: el.style.position || '',
+          origOverflow: el.style.overflow || ''
+        });
+
+        // Prepare for animation
+        el.style.position = 'relative';
+        el.style.zIndex = String(50 - i);
+        el.style.overflow = 'hidden';
+        el.style.transition = 'none';
+
+        // Apply crash with stagger
+        setTimeout(function() {
+          el.style.transition = 'transform 0.9s cubic-bezier(0.55, 0, 0.98, 0.54)';
+          el.style.transform = 'translateY(' + deltaY + 'px) rotate(' + rotate + 'deg) translateX(' + shiftX + 'px) scale(' + scaleDown + ')';
+        }, i * 50 + 50);
+      });
+
+      // Hide the corner Stitch debugger during crash
+      var stitchCorner = document.getElementById('stitch-debugger');
+      if (stitchCorner) stitchCorner.style.display = 'none';
+
+      // 4. Show overlay after elements finish falling
+      var fallDuration = elements.length * 50 + 900 + 100;
+      setTimeout(function() {
+        overlay.style.display = 'flex';
+        overlay.style.pointerEvents = 'auto';
+        crashBg.style.opacity = '1';
+        crashMsg.style.opacity = '1';
+        crashMsg.style.transform = 'scale(1)';
+      }, fallDuration);
+
+      // 5. Wait a beat then listen for reboot trigger
+      setTimeout(function() {
+        document.addEventListener('mousemove', reboot, { once: true });
+        document.addEventListener('touchstart', reboot, { once: true });
+        document.addEventListener('keydown', reboot, { once: true });
+      }, fallDuration + 300);
+
+    }, 100);
+  }
+
+  function reboot() {
+    // Hide overlay
+    crashBg.style.opacity = '0';
+    crashMsg.style.opacity = '0';
+    crashMsg.style.transform = 'scale(0.8)';
+
+    setTimeout(function() {
+      overlay.style.display = 'none';
+      overlay.style.pointerEvents = 'none';
+      // Restore corner Stitch
+      var stitchCorner = document.getElementById('stitch-debugger');
+      if (stitchCorner) stitchCorner.style.display = '';
+      // Restore horizontal scroll
+      document.body.style.overflowX = '';
+    }, 600);
+
+    // Spring cards back with stagger
+    savedElements.forEach(function(item, i) {
+      var el = item.el;
+      setTimeout(function() {
+        el.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        el.style.transform = item.origTransform || 'none';
+      }, i * 40);
+
+      // Cleanup styles after animation
+      setTimeout(function() {
+        el.style.transition = item.origTransition;
+        el.style.transform = item.origTransform;
+        el.style.zIndex = item.origZIndex;
+        el.style.position = item.origPosition;
+        el.style.overflow = item.origOverflow;
+      }, i * 40 + 900);
+    });
+
+    // Cooldown — allow re-crash after 10 min
+    setTimeout(function() {
+      crashed = false;
+      savedElements = [];
+    }, 10 * 60 * 1000);
+  }
+})();
+</script>

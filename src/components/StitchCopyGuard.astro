@@ -1,0 +1,67 @@
+---
+---
+
+<!-- Copy guard toast -->
+<div
+  id="stitch-copy-guard"
+  class="fixed top-20 left-1/2 z-[80] pointer-events-none"
+  style="display: none; transform: translateX(-50%) translateY(-20px); opacity: 0; transition: opacity 0.4s ease, transform 0.4s ease;"
+>
+  <div class="flex items-center gap-3 bg-ide-gray border border-primary/40 rounded-xl px-5 py-3 shadow-2xl shadow-primary/10">
+    <img src="/stitch-guard.png" alt="" class="w-10 h-10 object-contain shrink-0" draggable="false" />
+    <div class="font-mono text-xs leading-relaxed">
+      <span class="text-primary font-bold">🔒 Data locked.</span>
+      <br/>
+      <span class="text-gray-400">Just kidding, copy whatever you want 😜</span>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+(function() {
+  var toast = document.getElementById('stitch-copy-guard');
+  if (!toast) return;
+
+  var shown = false;
+  var hideTimer = null;
+
+  function showToast() {
+    if (shown) return;
+    shown = true;
+
+    if (hideTimer) clearTimeout(hideTimer);
+
+    toast.style.display = 'block';
+    // Force reflow for transition
+    toast.offsetHeight;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+
+    hideTimer = setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-20px)';
+      setTimeout(function() {
+        toast.style.display = 'none';
+        // Allow showing again after 30s cooldown
+        setTimeout(function() { shown = false; }, 30000);
+      }, 400);
+    }, 3000);
+  }
+
+  // Trigger on text selection inside experience section
+  document.addEventListener('selectionchange', function() {
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
+
+    var node = sel.anchorNode;
+    if (!node) return;
+    var el = node.nodeType === 3 ? node.parentElement : node;
+    if (!el) return;
+
+    // Only trigger inside #experience section
+    if (el.closest('#experience')) {
+      showToast();
+    }
+  });
+})();
+</script>

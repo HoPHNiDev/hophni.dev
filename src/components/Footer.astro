@@ -1,0 +1,78 @@
+---
+import { getCollection } from 'astro:content';
+
+const contactEntries = await getCollection('contacts');
+const contactData = contactEntries[0]?.data;
+const heading = contactData?.heading ?? 'Get in touch';
+const links = contactData?.links ?? [];
+---
+
+<!-- Contact Section -->
+<section class="pb-28" id="contact">
+  <div class="max-w-xl mx-auto p-8 border border-ide-border rounded-xl bg-ide-gray/20 animate-reveal">
+    <div class="font-mono text-sm space-y-4">
+      <div class="text-syntax-comment"># {heading}</div>
+      <div class="flex items-center gap-2">
+        <span class="text-primary">➜</span>
+        <span class="text-gray-100">cat contact.sh</span>
+      </div>
+      <div class="space-y-2 mt-6">
+        {links.map(link => (
+          <a
+            class="flex items-center gap-3 p-3 bg-ide-gray rounded hover:bg-primary/10 hover:border-primary/50 border border-ide-border transition-all"
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="material-symbols-outlined text-primary">{link.icon}</span>
+            <span class="text-gray-300">{link.label}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VS Code Status Bar Footer -->
+<footer class="fixed bottom-0 left-0 w-full h-6 bg-ide-status text-gray-400 flex items-center px-2 md:px-4 justify-between text-[11px] font-mono z-50">
+  <!-- Left side -->
+  <div class="flex items-center h-full overflow-hidden">
+    <div class="flex items-center gap-1 px-2 md:px-3 h-full bg-primary text-bg-dark font-bold">
+      <span class="material-symbols-outlined text-[14px]">account_tree</span>
+      <span>main*</span>
+    </div>
+    <div class="flex items-center gap-1 px-2 md:px-3 hover:bg-white/10 h-full cursor-default hidden sm:flex">
+      <span class="material-symbols-outlined text-[14px]">sync</span>
+      <span>0 ↓ 2 ↑</span>
+    </div>
+    <div class="flex items-center gap-1 px-2 md:px-3 hover:bg-white/10 h-full cursor-default hidden md:flex">
+      <span class="material-symbols-outlined text-[14px]">error</span>
+      <span>0</span>
+      <span class="material-symbols-outlined text-[14px] ml-1">warning</span>
+      <span>0</span>
+    </div>
+  </div>
+
+  <!-- Right side -->
+  <div class="flex items-center h-full overflow-hidden">
+    <a
+      class="px-2 md:px-3 h-full flex items-center gap-1 hover:bg-white/10 cursor-pointer text-gray-500 hover:text-primary transition-colors"
+      href="https://github.com/HoPHNiDev"
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Made by HoPHNi"
+    >
+      <span class="material-symbols-outlined text-[12px]">favorite</span>
+      <span class="hidden sm:inline">HoPHNi</span>
+    </a>
+    <div class="px-2 md:px-3 h-full flex items-center cursor-default hidden lg:flex">Spaces: 4</div>
+    <div class="px-2 md:px-3 h-full flex items-center cursor-default hidden md:flex">UTF-8</div>
+    <div class="px-2 md:px-3 h-full flex items-center font-bold text-primary">
+      <span class="hidden sm:inline">Python 3.12</span>
+      <span class="sm:hidden">Py 3.12</span>
+    </div>
+    <div class="px-1 md:px-3 h-full flex items-center cursor-default">
+      <span class="material-symbols-outlined text-[14px]">notifications</span>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,291 @@
+---
+import { getCollection } from 'astro:content';
+
+const heroEntries = await getCollection('hero');
+const heroData = heroEntries[0]?.data;
+const username = heroData?.username ?? 'user';
+const hostname = heroData?.hostname ?? 'portfolio';
+
+const terminalEntries = await getCollection('terminal');
+const terminalData = terminalEntries[0]?.data;
+const commands = terminalData?.commands ?? {};
+const sudoArt = terminalData?.sudoArt ?? '';
+
+const commandsJson = JSON.stringify(commands);
+const sudoArtJson = JSON.stringify(sudoArt);
+const promptLabel = `${username}@${hostname}`;
+---
+
+<div id="hidden-terminal" class="fixed inset-0 z-[100]" style="background: rgba(0,0,0,0.85); display: none;">
+  <div id="terminal-window" class="w-full max-w-3xl mx-auto mt-4 terminal-slide" style="transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+    <!-- macOS-style terminal header -->
+    <div id="terminal-header" class="bg-[#300a24] rounded-t-lg px-4 py-2.5 flex items-center gap-0 border-b border-[#5a2d4a]">
+      <!-- Traffic lights -->
+      <div class="flex items-center gap-[7px] group/dots">
+        <button id="close-terminal" class="w-[13px] h-[13px] rounded-full bg-[#ec6a5f] flex items-center justify-center cursor-pointer border-0 p-0 transition-all" title="Close">
+          <svg class="w-[9px] h-[9px] opacity-0 group-hover/dots:opacity-100 transition-opacity" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" stroke="#b3462f" stroke-width="3" stroke-linecap="round"/></svg>
+        </button>
+        <button id="minimize-terminal" class="w-[13px] h-[13px] rounded-full bg-[#f5bf4f] flex items-center justify-center cursor-pointer border-0 p-0 transition-all" title="Minimize">
+          <svg class="w-[9px] h-[9px] opacity-0 group-hover/dots:opacity-100 transition-opacity" viewBox="0 0 16 16"><path d="M3 8h10" stroke="#956d1b" stroke-width="3" stroke-linecap="round"/></svg>
+        </button>
+        <button id="fullscreen-terminal" class="w-[13px] h-[13px] rounded-full bg-[#62c554] flex items-center justify-center cursor-pointer border-0 p-0 transition-all" title="Full Screen">
+          <svg id="fullscreen-icon" class="w-[8px] h-[8px] opacity-0 group-hover/dots:opacity-100 transition-opacity" viewBox="0 0 16 16">
+            <path d="M3 3l4 0M3 3l0 4M13 13l-4 0M13 13l0-4" stroke="#2d8e30" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </svg>
+        </button>
+      </div>
+      <span class="ml-4 text-sm text-[#d4bfcf] font-mono">{promptLabel}: ~</span>
+    </div>
+    <!-- Terminal body -->
+    <div id="terminal-body" class="bg-[#300a24]/95 backdrop-blur-sm rounded-b-lg p-4 font-mono text-sm h-[60vh] overflow-y-auto text-[#d4bfcf] transition-all duration-300">
+      <div id="terminal-output">
+        <div class="text-accent-green">Welcome to {username} Terminal v1.0</div>
+        <div class="text-gray-400">Type "help" for available commands.</div>
+        <div class="mt-2"></div>
+      </div>
+      <div class="flex items-center gap-2" id="terminal-prompt-line">
+        <span class="text-accent-green shrink-0">{promptLabel}</span><span class="text-white">:</span><span class="text-blue-400">~</span><span class="text-white">$</span>
+        <input
+          id="terminal-input"
+          type="text"
+          class="bg-transparent border-none outline-none text-white flex-1 font-mono text-sm"
+          style="caret-color: #00FF00;"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes genie-out {
+    0% { transform: perspective(600px) rotateX(0) translateY(0) scaleX(1) scaleY(1); opacity: 1; transform-origin: bottom right; }
+    40% { transform: perspective(600px) rotateX(8deg) translateY(10vh) scaleX(0.7) scaleY(0.9); opacity: 0.8; transform-origin: bottom right; }
+    100% { transform: perspective(600px) rotateX(20deg) translate(40vw, 90vh) scaleX(0.05) scaleY(0.02); opacity: 0; transform-origin: bottom right; }
+  }
+  .genie-minimize { animation: genie-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+</style>
+
+<!-- Pass data to inline script -->
+<script id="terminal-data" type="application/json" set:html={JSON.stringify({ commands: commandsJson, sudoArt: sudoArtJson, prompt: promptLabel })}></script>
+
+<script is:inline>
+(function() {
+  var dataEl = document.getElementById('terminal-data');
+  var parsed = JSON.parse(dataEl.textContent);
+  var COMMANDS = JSON.parse(parsed.commands);
+  var STITCH_ASCII = JSON.parse(parsed.sudoArt);
+  var PROMPT = parsed.prompt;
+
+  var terminal = document.getElementById('hidden-terminal');
+  var input = document.getElementById('terminal-input');
+  var output = document.getElementById('terminal-output');
+  var closeBtn = document.getElementById('close-terminal');
+  var tBody = document.getElementById('terminal-body');
+
+  function showTerminal() {
+    if (!terminal) return;
+    // Clear genie class if coming back from minimize
+    var tw = document.getElementById('terminal-window');
+    if (tw) tw.classList.remove('genie-minimize');
+    terminal.style.display = '';
+    if (input) input.focus();
+  }
+
+  function hideTerminal() {
+    if (!terminal) return;
+    terminal.style.display = 'none';
+  }
+
+  function toggleTerminal() {
+    if (!terminal) return;
+    if (terminal.style.display === 'none') {
+      showTerminal();
+    } else {
+      hideTerminal();
+    }
+  }
+
+  document.addEventListener('keydown', function(e) {
+    var tag = e.target && e.target.tagName;
+    var isTerminalInput = e.target && e.target.id === 'terminal-input';
+
+    if ((e.key === '`' || e.key === '~') && !e.ctrlKey && !e.metaKey) {
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        if (isTerminalInput && terminal && terminal.style.display !== 'none') {
+          e.preventDefault();
+          hideTerminal();
+        }
+        return;
+      }
+      e.preventDefault();
+      toggleTerminal();
+      return;
+    }
+
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      toggleTerminal();
+      return;
+    }
+
+    if (e.key === 'Escape' && terminal && terminal.style.display !== 'none') {
+      hideTerminal();
+    }
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', hideTerminal);
+
+  // Minimize — genie effect: pinch bottom and fly to bottom-right
+  var minimizeBtn = document.getElementById('minimize-terminal');
+  if (minimizeBtn) {
+    minimizeBtn.addEventListener('click', function() {
+      if (!terminalWindow) return;
+      terminalWindow.classList.add('genie-minimize');
+      setTimeout(hideTerminal, 500);
+    });
+  }
+
+  // Fullscreen — toggle between default and full viewport
+  var fullscreenBtn = document.getElementById('fullscreen-terminal');
+  var fullscreenIcon = document.getElementById('fullscreen-icon');
+  var terminalWindow = document.getElementById('terminal-window');
+  var terminalHeader = document.getElementById('terminal-header');
+  var isFullscreen = false;
+
+  // SVG paths
+  var expandPath = 'M3 3l4 0M3 3l0 4M13 13l-4 0M13 13l0-4';
+  var collapsePath = 'M7 3l0 4M3 7l4 0M9 13l0-4M13 9l-4 0';
+
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', function() {
+      isFullscreen = !isFullscreen;
+      if (isFullscreen) {
+        if (terminalWindow) {
+          terminalWindow.style.maxWidth = '100vw';
+          terminalWindow.style.width = '100vw';
+          terminalWindow.style.margin = '0';
+          terminalWindow.style.marginTop = '0';
+          terminalWindow.style.height = '100vh';
+          terminalWindow.style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+          terminalWindow.style.flexDirection = 'column';
+        }
+        if (terminalHeader) {
+          terminalHeader.style.borderRadius = '0';
+        }
+        if (tBody) {
+          tBody.style.height = '';
+          tBody.style.flex = '1';
+          tBody.style.borderRadius = '0';
+        }
+        if (fullscreenIcon) {
+          fullscreenIcon.querySelector('path').setAttribute('d', collapsePath);
+        }
+      } else {
+        if (terminalWindow) {
+          terminalWindow.style.maxWidth = '';
+          terminalWindow.style.width = '';
+          terminalWindow.style.margin = '';
+          terminalWindow.style.marginTop = '';
+          terminalWindow.style.height = '';
+          terminalWindow.style.display = '';
+          document.body.style.overflow = '';
+          terminalWindow.style.flexDirection = '';
+        }
+        if (terminalHeader) {
+          terminalHeader.style.borderRadius = '';
+        }
+        if (tBody) {
+          tBody.style.height = '60vh';
+          tBody.style.flex = '';
+          tBody.style.borderRadius = '';
+        }
+        if (fullscreenIcon) {
+          fullscreenIcon.querySelector('path').setAttribute('d', expandPath);
+        }
+      }
+    });
+  }
+
+  if (terminal) {
+    terminal.addEventListener('click', function(e) {
+      if (e.target === terminal) hideTerminal();
+    });
+  }
+
+  function addOutput(text, color) {
+    if (!output) return;
+    var div = document.createElement('div');
+    div.className = (color || 'text-[#d4bfcf]') + ' whitespace-pre-wrap';
+    div.textContent = text;
+    output.appendChild(div);
+    if (tBody) tBody.scrollTop = tBody.scrollHeight;
+  }
+
+  function addPrompt() {
+    if (!output) return;
+    var div = document.createElement('div');
+    div.className = 'mt-2';
+    output.appendChild(div);
+  }
+
+  var history = [];
+  var historyIndex = -1;
+
+  if (input) {
+    input.addEventListener('keydown', function(e) {
+      // Arrow up — previous command
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (history.length === 0) return;
+        if (historyIndex < history.length - 1) historyIndex++;
+        input.value = history[history.length - 1 - historyIndex];
+        return;
+      }
+      // Arrow down — next command
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (historyIndex > 0) {
+          historyIndex--;
+          input.value = history[history.length - 1 - historyIndex];
+        } else {
+          historyIndex = -1;
+          input.value = '';
+        }
+        return;
+      }
+
+      if (e.key !== 'Enter') return;
+      var val = input.value.trim();
+      input.value = '';
+      historyIndex = -1;
+
+      if (val) history.push(val);
+
+      addOutput(PROMPT + ':~$ ' + val, 'text-accent-green');
+
+      if (val === 'clear') {
+        if (output) output.innerHTML = '';
+        return;
+      }
+
+      if (val === 'sudo rm -rf /') {
+        document.body.classList.add('glitch-effect');
+        setTimeout(function() { document.body.classList.remove('glitch-effect'); }, 300);
+        addOutput(STITCH_ASCII, 'text-accent-green');
+        addPrompt();
+        return;
+      }
+
+      if (COMMANDS[val]) {
+        addOutput(COMMANDS[val]);
+      } else if (val) {
+        addOutput('command not found: ' + val, 'text-red-400');
+      }
+      addPrompt();
+    });
+  }
+})();
+</script>
