@@ -5,15 +5,34 @@ const heroEntries = await getCollection('hero');
 const heroData = heroEntries[0]?.data;
 const username = heroData?.username ?? 'user';
 const hostname = heroData?.hostname ?? 'portfolio';
+const role = heroData?.role ?? 'Developer';
+const bio = heroData?.bio ?? '';
+const skills = heroData?.skills ?? {};
+
+const contactEntries = await getCollection('contacts');
+const contactData = contactEntries[0]?.data;
+const contactLinks = contactData?.links ?? [];
 
 const terminalEntries = await getCollection('terminal');
 const terminalData = terminalEntries[0]?.data;
 const commands = terminalData?.commands ?? {};
 const sudoArt = terminalData?.sudoArt ?? '';
+const neofetchInfo = terminalData?.neofetchInfo ?? {};
 
 const commandsJson = JSON.stringify(commands);
 const sudoArtJson = JSON.stringify(sudoArt);
 const promptLabel = `${username}@${hostname}`;
+
+// Build skills JSON string for cat skills.json
+const skillsFormatted = JSON.stringify(
+  Object.fromEntries(Object.entries(skills).map(([k, v]) => [k, v])),
+  null, 2
+);
+
+// Build contact info for cat contact.sh
+const contactFormatted = contactLinks.map(
+  (l: { label: string; url: string }) => `  ${l.label}  →  ${l.url}`
+).join('\n');
 ---
 
 <div id="hidden-terminal" class="fixed inset-0 z-[100]" style="background: rgba(0,0,0,0.85); display: none;">
@@ -39,8 +58,8 @@ const promptLabel = `${username}@${hostname}`;
     <!-- Terminal body -->
     <div id="terminal-body" class="bg-[#300a24]/95 backdrop-blur-sm rounded-b-lg p-4 font-mono text-sm h-[60vh] overflow-y-auto text-[#d4bfcf] transition-all duration-300">
       <div id="terminal-output">
-        <div class="text-accent-green">Welcome to {username} Terminal v1.0</div>
-        <div class="text-gray-400">Type "help" for available commands.</div>
+        <div class="text-accent-green">Welcome to {username} Terminal v2.0</div>
+        <div class="text-gray-400">Type "help" for available commands. Press Tab for autocomplete.</div>
         <div class="mt-2"></div>
       </div>
       <div class="flex items-center gap-2" id="terminal-prompt-line">
@@ -68,7 +87,16 @@ const promptLabel = `${username}@${hostname}`;
 </style>
 
 <!-- Pass data to inline script -->
-<script id="terminal-data" type="application/json" set:html={JSON.stringify({ commands: commandsJson, sudoArt: sudoArtJson, prompt: promptLabel })}></script>
+<script id="terminal-data" type="application/json" set:html={JSON.stringify({
+  commands: commandsJson,
+  sudoArt: sudoArtJson,
+  prompt: promptLabel,
+  role: role,
+  bio: bio,
+  skills: skillsFormatted,
+  contactInfo: contactFormatted,
+  neofetchInfo: JSON.stringify(neofetchInfo),
+})}></script>
 
 <script is:inline>
 (function() {
@@ -77,16 +105,30 @@ const promptLabel = `${username}@${hostname}`;
   var COMMANDS = JSON.parse(parsed.commands);
   var STITCH_ASCII = JSON.parse(parsed.sudoArt);
   var PROMPT = parsed.prompt;
+  var ROLE = parsed.role;
+  var BIO = parsed.bio;
+  var SKILLS_JSON = parsed.skills;
+  var CONTACT_INFO = parsed.contactInfo;
+  var NEOFETCH_INFO = JSON.parse(parsed.neofetchInfo);
 
   var terminal = document.getElementById('hidden-terminal');
   var input = document.getElementById('terminal-input');
   var output = document.getElementById('terminal-output');
   var closeBtn = document.getElementById('close-terminal');
   var tBody = document.getElementById('terminal-body');
+  var terminalWindow = document.getElementById('terminal-window');
 
+  // ── All known commands for autocomplete ──
+  var ALL_COMMANDS = [
+    'help', 'whoami', 'cat skills.json', 'python3 info.py', 'cat contact.sh',
+    'fetch_stack', 'neofetch', 'ls', 'pwd', 'date', 'uptime', 'history',
+    'echo', 'clear', 'exit', 'sudo rm -rf /', 'cat .secret', 'cat about.py',
+    'cd', 'cat README.md', 'cat .gitignore'
+  ];
+
+  // ── Show / Hide / Toggle ──
   function showTerminal() {
     if (!terminal) return;
-    // Clear genie class if coming back from minimize
     var tw = document.getElementById('terminal-window');
     if (tw) tw.classList.remove('genie-minimize');
     terminal.style.display = '';
@@ -107,6 +149,7 @@ const promptLabel = `${username}@${hostname}`;
     }
   }
 
+  // ── Keyboard shortcuts ──
   document.addEventListener('keydown', function(e) {
     var tag = e.target && e.target.tagName;
     var isTerminalInput = e.target && e.target.id === 'terminal-input';
@@ -137,7 +180,7 @@ const promptLabel = `${username}@${hostname}`;
 
   if (closeBtn) closeBtn.addEventListener('click', hideTerminal);
 
-  // Minimize — genie effect: pinch bottom and fly to bottom-right
+  // ── Minimize — genie effect ──
   var minimizeBtn = document.getElementById('minimize-terminal');
   if (minimizeBtn) {
     minimizeBtn.addEventListener('click', function() {
@@ -147,14 +190,11 @@ const promptLabel = `${username}@${hostname}`;
     });
   }
 
-  // Fullscreen — toggle between default and full viewport
+  // ── Fullscreen toggle ──
   var fullscreenBtn = document.getElementById('fullscreen-terminal');
   var fullscreenIcon = document.getElementById('fullscreen-icon');
-  var terminalWindow = document.getElementById('terminal-window');
   var terminalHeader = document.getElementById('terminal-header');
   var isFullscreen = false;
-
-  // SVG paths
   var expandPath = 'M3 3l4 0M3 3l0 4M13 13l-4 0M13 13l0-4';
   var collapsePath = 'M7 3l0 4M3 7l4 0M9 13l0-4M13 9l-4 0';
 
@@ -172,17 +212,13 @@ const promptLabel = `${username}@${hostname}`;
           document.body.style.overflow = 'hidden';
           terminalWindow.style.flexDirection = 'column';
         }
-        if (terminalHeader) {
-          terminalHeader.style.borderRadius = '0';
-        }
+        if (terminalHeader) terminalHeader.style.borderRadius = '0';
         if (tBody) {
           tBody.style.height = '';
           tBody.style.flex = '1';
           tBody.style.borderRadius = '0';
         }
-        if (fullscreenIcon) {
-          fullscreenIcon.querySelector('path').setAttribute('d', collapsePath);
-        }
+        if (fullscreenIcon) fullscreenIcon.querySelector('path').setAttribute('d', collapsePath);
       } else {
         if (terminalWindow) {
           terminalWindow.style.maxWidth = '';
@@ -194,27 +230,25 @@ const promptLabel = `${username}@${hostname}`;
           document.body.style.overflow = '';
           terminalWindow.style.flexDirection = '';
         }
-        if (terminalHeader) {
-          terminalHeader.style.borderRadius = '';
-        }
+        if (terminalHeader) terminalHeader.style.borderRadius = '';
         if (tBody) {
           tBody.style.height = '60vh';
           tBody.style.flex = '';
           tBody.style.borderRadius = '';
         }
-        if (fullscreenIcon) {
-          fullscreenIcon.querySelector('path').setAttribute('d', expandPath);
-        }
+        if (fullscreenIcon) fullscreenIcon.querySelector('path').setAttribute('d', expandPath);
       }
     });
   }
 
+  // Click backdrop to close
   if (terminal) {
     terminal.addEventListener('click', function(e) {
       if (e.target === terminal) hideTerminal();
     });
   }
 
+  // ── Output helpers ──
   function addOutput(text, color) {
     if (!output) return;
     var div = document.createElement('div');
@@ -224,6 +258,8 @@ const promptLabel = `${username}@${hostname}`;
     if (tBody) tBody.scrollTop = tBody.scrollHeight;
   }
 
+
+
   function addPrompt() {
     if (!output) return;
     var div = document.createElement('div');
@@ -231,25 +267,305 @@ const promptLabel = `${username}@${hostname}`;
     output.appendChild(div);
   }
 
-  var history = [];
+  // ── Command history ──
+  var cmdHistory = [];
   var historyIndex = -1;
 
+  // ── Tab Autocomplete ──
+  function findMatch(partial) {
+    if (!partial) return null;
+    var lower = partial.toLowerCase();
+    // Exact prefix match first
+    var matches = ALL_COMMANDS.filter(function(cmd) {
+      return cmd.toLowerCase().indexOf(lower) === 0;
+    });
+    if (matches.length === 1) return matches[0];
+    if (matches.length > 1) return matches; // multiple matches
+    return null;
+  }
+
+  // ── Dynamic command handlers ──
+  function handleCommand(val) {
+    var lowerVal = val.toLowerCase().trim();
+
+    // clear
+    if (lowerVal === 'clear') {
+      if (output) output.innerHTML = '';
+      return;
+    }
+
+    // exit
+    if (lowerVal === 'exit' || lowerVal === 'quit') {
+      addOutput('logout', 'text-gray-400');
+      setTimeout(hideTerminal, 300);
+      return;
+    }
+
+    // sudo rm -rf /
+    if (val === 'sudo rm -rf /') {
+      document.body.classList.add('glitch-effect');
+      setTimeout(function() { document.body.classList.remove('glitch-effect'); }, 300);
+      addOutput(STITCH_ASCII, 'text-accent-green');
+      addPrompt();
+      return;
+    }
+
+    // cat skills.json — dynamic from hero data
+    if (lowerVal === 'cat skills.json') {
+      addOutput(SKILLS_JSON, 'text-syntax-string');
+      addPrompt();
+      return;
+    }
+
+    // python3 info.py — dynamic bio
+    if (lowerVal === 'python3 info.py' || lowerVal === 'python info.py') {
+      addOutput('"""', 'text-gray-400');
+      addOutput(BIO, 'text-gray-400');
+      addOutput('"""', 'text-gray-400');
+      addPrompt();
+      return;
+    }
+
+    // cat contact.sh — dynamic contacts
+    if (lowerVal === 'cat contact.sh') {
+      addOutput('#!/bin/bash', 'text-syntax-comment');
+      addOutput('# Contact information\n', 'text-syntax-comment');
+      addOutput(CONTACT_INFO);
+      addPrompt();
+      return;
+    }
+
+    // neofetch — system info with ASCII art (info from .md)
+    if (lowerVal === 'neofetch') {
+      var ascii = [
+        '             .-/+oossssoo+/-.       ',
+        '         `:+ssssssssssssssssss+:`   ',
+        '       -+ssssssssssssssssssyyssss+- ',
+        '     .ossssssssssssssssssdMMMNysssso.',
+        '    /ssssssssssshdmmNNmmyNMMMMhssssss/',
+        '   +ssssssssshmydMMMMMMMNddddyssssssss+',
+        '  /sssssssshNMMMyhhyyyyhmNMMMNhssssssss/',
+        ' .ssssssssdMMMNhsssssssssshNMMMdssssssss.',
+        ' +sssshhhyNMMNyssssssssssssyNMMMysssssss+',
+        ' ossyNMMMNyMMhsssssssssssssshmmmhssssssso',
+        ' ossyNMMMNyMMhsssssssssssssshmmmhssssssso',
+        ' +sssshhhyNMMNyssssssssssssyNMMMysssssss+',
+        ' .ssssssssdMMMNhsssssssssshNMMMdssssssss.',
+        '  /sssssssshNMMMyhhyyyyhdNMMMNhssssssss/',
+        '   +sssssssssdmydMMMMMMMMddddyssssssss+',
+        '    /ssssssssssshdmNNNNmyNMMMMhssssss/',
+        '     .osssssssssssssssssssdMMMNysssso.',
+        '       -+sssssssssssssssssyyyssss+-',
+        '         `:+ssssssssssssssssss+:`',
+        '             .-/+oossssoo+/-.'
+      ];
+      // Build info lines from editable neofetchInfo
+      var infoKeys = Object.keys(NEOFETCH_INFO);
+      var info = [PROMPT, '─────────────────'];
+      for (var ik = 0; ik < infoKeys.length; ik++) {
+        info.push(infoKeys[ik] + ': ' + NEOFETCH_INFO[infoKeys[ik]]);
+      }
+      while (info.length < ascii.length) info.push('');
+      for (var ni = 0; ni < ascii.length; ni++) {
+        var line = ascii[ni];
+        while (line.length < 44) line += ' ';
+        var infoLine = info[ni] || '';
+        addOutput(line + infoLine, ni < 2 ? 'text-accent-green' : 'text-[#d4bfcf]');
+      }
+      addPrompt();
+      return;
+    }
+
+    // cat about.py
+    if (lowerVal === 'cat about.py') {
+      addOutput('#!/usr/bin/env python3', 'text-syntax-comment');
+      addOutput('', '');
+      addOutput('class Developer:', 'text-syntax-keyword');
+      addOutput('    name = "' + PROMPT.split('@')[0] + '"', 'text-syntax-string');
+      addOutput('    role = "' + ROLE + '"', 'text-syntax-string');
+      addOutput('    location = "Tashkent, Uzbekistan"', 'text-syntax-string');
+      addOutput('    education = "Bachelor\'s, IT — Profi University (2024)"', 'text-syntax-string');
+      addOutput('    languages = ["Russian 🇷🇺", "English 🇬🇧", "Uzbek 🇺🇿"]', 'text-syntax-string');
+      addPrompt();
+      return;
+    }
+
+    // cat README.md
+    if (lowerVal === 'cat readme.md') {
+      addOutput('# ' + PROMPT.split('@')[0] + '\'s Portfolio', 'text-accent-green');
+      addOutput('');
+      addOutput('> ' + ROLE, 'text-syntax-string');
+      addOutput('> ' + BIO.substring(0, 120) + '...', 'text-gray-400');
+      addOutput('');
+      addOutput('Built with Astro 5 + Tailwind CSS v4', 'text-primary');
+      addOutput('Deployed on GitHub Pages', 'text-primary');
+      addPrompt();
+      return;
+    }
+
+    // echo
+    if (lowerVal.indexOf('echo ') === 0) {
+      var echoText = val.substring(5);
+      addOutput(echoText);
+      addPrompt();
+      return;
+    }
+
+    // cd
+    if (lowerVal === 'cd' || lowerVal.indexOf('cd ') === 0) {
+      var target = val.substring(3).trim();
+      if (!target || target === '~' || target === '.') {
+        addOutput('/home/' + PROMPT.split('@')[0] + '/portfolio');
+      } else if (target === 'projects' || target === 'projects/') {
+        addOutput('Nice try. This is a single-page portfolio 😏', 'text-yellow-400');
+      } else if (target === '..') {
+        addOutput('Permission denied: you can\'t leave this portfolio 🔒', 'text-red-400');
+      } else {
+        addOutput('cd: no such directory: ' + target, 'text-red-400');
+      }
+      addPrompt();
+      return;
+    }
+
+    // date
+    if (lowerVal === 'date') {
+      addOutput(new Date().toString(), 'text-accent-green');
+      addPrompt();
+      return;
+    }
+
+    // history
+    if (lowerVal === 'history') {
+      if (cmdHistory.length === 0) {
+        addOutput('  (no commands in history)', 'text-gray-400');
+      } else {
+        cmdHistory.forEach(function(cmd, i) {
+          addOutput('  ' + (i + 1) + '  ' + cmd);
+        });
+      }
+      addPrompt();
+      return;
+    }
+
+    // rm
+    if (lowerVal.indexOf('rm ') === 0) {
+      addOutput('rm: permission denied. Stitch protects these files 🛡️', 'text-red-400');
+      addPrompt();
+      return;
+    }
+
+    // mkdir / touch (with or without args)
+    if (lowerVal === 'mkdir' || lowerVal.indexOf('mkdir ') === 0 || lowerVal === 'touch' || lowerVal.indexOf('touch ') === 0) {
+      addOutput('Read-only filesystem. This portfolio is immutable ✨', 'text-yellow-400');
+      addPrompt();
+      return;
+    }
+
+    // vim / nano
+    if (lowerVal.indexOf('vim ') === 0 || lowerVal === 'vim' || lowerVal.indexOf('nano ') === 0 || lowerVal === 'nano') {
+      addOutput('Nice try! Use "cat" to read files instead 📖', 'text-yellow-400');
+      addPrompt();
+      return;
+    }
+
+    // git
+    if (lowerVal === 'git status') {
+      addOutput('On branch main', 'text-accent-green');
+      addOutput('Your branch is up to date with \'origin/main\'.');
+      addOutput('');
+      addOutput('nothing to commit, working tree clean', 'text-accent-green');
+      addPrompt();
+      return;
+    }
+    if (lowerVal === 'git log' || lowerVal.indexOf('git log') === 0) {
+      addOutput('commit a1b2c3d (HEAD -> main, origin/main)', 'text-yellow-400');
+      addOutput('Author: hophni <hophnidev@gmail.com>');
+      addOutput('Date:   ' + new Date().toDateString());
+      addOutput('');
+      addOutput('    update portfolio content ✨');
+      addPrompt();
+      return;
+    }
+
+    // pip
+    if (lowerVal === 'pip list' || lowerVal === 'pip3 list') {
+      addOutput('Package          Version', 'text-accent-green');
+      addOutput('──────────────── ───────');
+      addOutput('fastapi          0.115.0');
+      addOutput('sqlalchemy       2.0.36');
+      addOutput('pydantic         2.10.0');
+      addOutput('celery           5.4.0');
+      addOutput('pyrogram         2.0.106');
+      addOutput('pytest           8.3.0');
+      addPrompt();
+      return;
+    }
+
+    // whoami — override with live data
+    if (lowerVal === 'whoami') {
+      addOutput(PROMPT.split('@')[0] + ' — ' + ROLE);
+      addPrompt();
+      return;
+    }
+
+    // Static commands from COMMANDS map
+    if (COMMANDS[val]) {
+      addOutput(COMMANDS[val]);
+      addPrompt();
+      return;
+    }
+    // Try lowercase match
+    if (COMMANDS[lowerVal]) {
+      addOutput(COMMANDS[lowerVal]);
+      addPrompt();
+      return;
+    }
+
+    // Unknown
+    if (val) {
+      addOutput('command not found: ' + val, 'text-red-400');
+      addOutput('Type "help" for available commands.', 'text-gray-400');
+    }
+    addPrompt();
+  }
+
+  // ── Input handler ──
   if (input) {
     input.addEventListener('keydown', function(e) {
+      // Tab — autocomplete
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        var partial = input.value;
+        if (!partial) return;
+        var match = findMatch(partial);
+        if (!match) return;
+        if (typeof match === 'string') {
+          // Single match — fill it in
+          input.value = match;
+        } else if (Array.isArray(match)) {
+          // Multiple matches — show them
+          addOutput(PROMPT + ':~$ ' + partial, 'text-accent-green');
+          addOutput(match.join('  '), 'text-gray-400');
+          addPrompt();
+        }
+        return;
+      }
+
       // Arrow up — previous command
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        if (history.length === 0) return;
-        if (historyIndex < history.length - 1) historyIndex++;
-        input.value = history[history.length - 1 - historyIndex];
+        if (cmdHistory.length === 0) return;
+        if (historyIndex < cmdHistory.length - 1) historyIndex++;
+        input.value = cmdHistory[cmdHistory.length - 1 - historyIndex];
         return;
       }
+
       // Arrow down — next command
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (historyIndex > 0) {
           historyIndex--;
-          input.value = history[history.length - 1 - historyIndex];
+          input.value = cmdHistory[cmdHistory.length - 1 - historyIndex];
         } else {
           historyIndex = -1;
           input.value = '';
@@ -257,34 +573,23 @@ const promptLabel = `${username}@${hostname}`;
         return;
       }
 
+      // Ctrl+L — clear
+      if (e.ctrlKey && e.key === 'l') {
+        e.preventDefault();
+        if (output) output.innerHTML = '';
+        return;
+      }
+
+      // Enter — execute
       if (e.key !== 'Enter') return;
       var val = input.value.trim();
       input.value = '';
       historyIndex = -1;
 
-      if (val) history.push(val);
+      if (val) cmdHistory.push(val);
 
       addOutput(PROMPT + ':~$ ' + val, 'text-accent-green');
-
-      if (val === 'clear') {
-        if (output) output.innerHTML = '';
-        return;
-      }
-
-      if (val === 'sudo rm -rf /') {
-        document.body.classList.add('glitch-effect');
-        setTimeout(function() { document.body.classList.remove('glitch-effect'); }, 300);
-        addOutput(STITCH_ASCII, 'text-accent-green');
-        addPrompt();
-        return;
-      }
-
-      if (COMMANDS[val]) {
-        addOutput(COMMANDS[val]);
-      } else if (val) {
-        addOutput('command not found: ' + val, 'text-red-400');
-      }
-      addPrompt();
+      handleCommand(val);
     });
   }
 })();

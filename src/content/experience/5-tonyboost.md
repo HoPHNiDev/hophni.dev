@@ -9,6 +9,5 @@ description: "TMA automation platform & Telegram Gifts marketplace on TON"
 
 - Built **Telegram bot with WebSocket** for managing automation orders
 - Integrated **real-time crypto price monitoring** via DexScreener API
-- Designed custom **ORM-free database module** with caching and fail-safe logic
 - **TonyGiftsBot**: built from scratch in 1 week — automated Telegram Gifts trading
 - Handled **255 concurrent TON transactions** with instant delivery

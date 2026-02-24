@@ -117,7 +117,7 @@ name: "Project Name"
 description: "What the project does."
 stack: ["Python", "Selenium"]
 icon: "smart_toy"    # Material Symbol name
-github: "https://github.com/..."  # Optional
+link: "https://example.com"  # Optional (GitHub, website, etc.)
 order: 1
 ---
 ```
@@ -130,14 +130,20 @@ order: 1
 ---
 heading: "Want to collaborate or hire me?"
 links:
+  # Material Symbol icon (default)
+  - label: "hophnidev@gmail.com"
+    url: "mailto:hophnidev@gmail.com"
+    icon: "mail"
+  # Custom SVG icon (e.g. brand logos)
   - label: "github.com/yourname"
     url: "https://github.com/yourname"
     icon: "code"
-  - label: "@yourname"
-    url: "https://t.me/yourname"
-    icon: "chat"
+    iconType: "svg"           # "material" (default) or "svg"
+    svgPath: "M12 0c-6.626..." # SVG path data (d attribute)
 ---
 ```
+
+> `iconType: "svg"` renders an inline `<svg>` with the provided `svgPath`. Omit it for default Material Symbols.
 
 ### 🎨 Theme Colors — `src/styles/global.css`
 
@@ -185,15 +191,21 @@ Stitch peeks from the bottom-right holding a glowing bug.
 ### 2. 🖥️ Hidden Terminal
 Press **`` ` ``** (backtick), **`~`** (tilde), or **`Cmd+K`** / **`Ctrl+K`** to open an Ubuntu-styled terminal overlay.
 
+**Tab autocomplete** — type a partial command and press `Tab` to complete it.
+
 | Command | Output |
 |---------|--------|
 | `help` | List of available commands |
+| `cat skills.json` | Tech skills (from hero section) |
+| `python3 info.py` | Bio in triple quotes |
+| `cat contact.sh` | Contact links |
+| `neofetch` | Ubuntu-style ASCII + system info |
 | `fetch_stack` | ASCII tech stack table |
-| `whoami` | Your name and role |
-| `clear` | Clear terminal output |
+| `ls` | Virtual file listing |
+| `git status` | Fake git status |
 | `sudo rm -rf /` | Glitch effect + ASCII art 💀 |
 
-> Customize commands in `src/content/terminal/commands.md`
+> Customize commands and neofetch info in `src/content/terminal/commands.md`
 
 ### 3. 🔍 Stitch Code Reviewer
 Hover over any **tech badge** (in Experience or Projects) — Stitch appears with a speech bubble commenting on the technology.

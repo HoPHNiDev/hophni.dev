@@ -32,7 +32,7 @@ const projects = defineCollection({
     description: z.string(),
     stack: z.array(z.string()),
     icon: z.string(),
-    github: z.string().optional(),
+    link: z.string().optional(),
     order: z.number(),
   }),
 });
@@ -45,6 +45,9 @@ const contacts = defineCollection({
       label: z.string(),
       url: z.string(),
       icon: z.string(),
+      iconType: z.enum(["material", "svg"]).default("material"),
+      svgPath: z.string().optional(),
+      svgViewBox: z.string().default("0 0 24 24"),
     })),
   }),
 });
@@ -54,6 +57,7 @@ const terminal = defineCollection({
   schema: z.object({
     commands: z.record(z.string()),
     sudoArt: z.string(),
+    neofetchInfo: z.record(z.string()).optional(),
   }),
 });
 

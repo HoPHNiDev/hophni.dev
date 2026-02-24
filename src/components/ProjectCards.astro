@@ -22,8 +22,8 @@ const projects = projectEntries
         <div class="flex items-center justify-between">
           <span class="material-symbols-outlined text-primary text-3xl">{project.icon}</span>
           <div class="flex gap-3 text-gray-400 group-hover:text-primary transition-colors">
-            {project.github && (
-              <a href={project.github} target="_blank" rel="noopener noreferrer" class="hover:scale-110 transition-transform">
+            {project.link && (
+              <a href={project.link} target="_blank" rel="noopener noreferrer" class="hover:scale-110 transition-transform">
                 <span class="material-symbols-outlined cursor-pointer">link</span>
               </a>
             )}

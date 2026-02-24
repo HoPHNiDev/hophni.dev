@@ -3,10 +3,11 @@ role: "Python Backend Developer"
 username: "hophni"
 hostname: "portfolio"
 templateUrl: "https://github.com/HoPHNiDev/hophni.dev"
-bio: "4+ years in IT. Double regional olympiad winner in CS (2021, 2023). 8th place at national championship (2024). Gold medal graduate. Building high-load backends, Telegram bots, and automation systems."
+bio: "Results-driven Python Backend Developer with 4+ years building scalable distributed systems. Two-time regional Informatics Olympiad champion (2021, 2023), 8th nationally (2024). Deep experience in Fintech ERP systems, AI-driven data pipelines, FMCSA-compliant logistics, and Web3/TON blockchain automation."
 skills:
-  backend: ["FastAPI", "Django", "SQLAlchemy"]
+  languages: ["Python", "SQL", "JavaScript"]
+  backend: ["FastAPI", "Django", "SQLAlchemy 2.0", "SQLModel", "Pydantic"]
   database: ["PostgreSQL", "Redis", "SQLite3"]
-  devops: ["Docker", "Nginx", "CI/CD", "GitHub Actions"]
-  tools: ["Celery", "RabbitMQ", "Pyrogram", "Alembic"]
+  devops: ["Docker", "Nginx", "CI/CD", "GitHub Actions", "AWS S3"]
+  tools: ["Celery", "RabbitMQ", "Pyrogram", "Alembic", "Pytest"]
 ---

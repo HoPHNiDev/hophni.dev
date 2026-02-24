@@ -35,4 +35,9 @@ reviews:
   html: "The skeleton! Every page needs bones! 🦴"
   css: "Pretty colors! Stitch likes blue! 💙"
   javascript: "The language of the web! Ohana! 🌐"
+  pydantic: "Data validation! No bad data sneaks past! 🛡️"
+  "aws s3": "Cloud buckets! Files float in sky! ☁️"
+  "openai api": "AI brain! Stitch gets smarter! 🧠"
+  loguru: "Pretty logs! Easy to read! 📋"
+  sentry: "Error tracking! No bug hides! 🕵️"
 ---
