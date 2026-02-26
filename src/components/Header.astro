@@ -155,6 +155,24 @@ const navTabs = [
     restoreBtn.addEventListener('click', restoreAll);
   }
 
+  // Alt+W (Option+W on macOS) to close active tab
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyW') {
+      e.preventDefault();
+
+      // Find the currently active (visible + highlighted) tab
+      const activeTab = Array.from(allTabs).find(tab =>
+        tab.classList.contains('border-primary') &&
+        (tab as HTMLElement).style.display !== 'none'
+      ) as HTMLElement | undefined;
+
+      if (!activeTab) return;
+
+      const closeBtn = activeTab.querySelector('[data-close-tab]') as HTMLElement;
+      if (closeBtn) closeBtn.click();
+    }
+  });
+
   // Ctrl+Z to restore last closed tab
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
